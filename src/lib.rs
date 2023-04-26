@@ -58,6 +58,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn parse_error() {
+        let result = is_valid(
+  "Repl.it uses operational transformations to keep everyone in a multiplayer repl in sync.",
+  "Repl.it uses operational transformations to keep everyone in a multiplayer repl in sync.",
+  "[dd_1]"
+        );
+        assert_eq!(result.unwrap_err(), ValidationError::ParseError);
+    }
+
+    #[test]
     fn first() {
         let result = is_valid(
   "Repl.it uses operational transformations to keep everyone in a multiplayer repl in sync.",
@@ -115,15 +125,5 @@ mod tests {
   "[]"
         );
         assert!(result.is_ok());
-    }
-
-    #[test]
-    fn parse_error() {
-        let result = is_valid(
-  "Repl.it uses operational transformations to keep everyone in a multiplayer repl in sync.",
-  "Repl.it uses operational transformations to keep everyone in a multiplayer repl in sync.",
-  "[dd_1]"
-        );
-        assert_eq!(result.unwrap_err(), ValidationError::ParseError);
     }
 }
