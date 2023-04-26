@@ -10,8 +10,6 @@ pub fn is_valid<S: Into<String>>(stale: S, latest: S, ot_json: S) -> Result<(), 
     let mut result = stale.clone();
 
     for operation in operations {
-        dbg!(&operation);
-
         match operation {
             Operation::Skip { count } => {
                 if cursor + count > result.len() {
@@ -30,9 +28,6 @@ pub fn is_valid<S: Into<String>>(stale: S, latest: S, ot_json: S) -> Result<(), 
                 cursor += chars.len();
             }
         }
-
-        dbg!(&cursor);
-        dbg!(&result);
     }
 
     if result != latest {
