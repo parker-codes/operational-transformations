@@ -6,14 +6,35 @@ pub fn is_valid<S: Into<String>>(stale: S, latest: S, ot_json: S) -> Result<(), 
     let operations: Vec<Operation> =
         serde_json::from_str(&ot_json.into()).map_err(|_| ValidationError::ParseError)?;
 
-    Ok(())
-}
+    let mut cursor = 0;
+    let mut result = stale.clone();
 
-#[derive(Debug, PartialEq)]
-pub enum ValidationError {
-    SkipPastEnd,
-    DeletePastEnd,
-    ParseError,
+    for operation in operations {
+        match operation {
+            Operation::Skip { count } => {
+                if cursor + count > stale.len() {
+                    return Err(ValidationError::SkipPastEnd);
+                }
+                cursor += count;
+            }
+            Operation::Delete { count } => {
+                if cursor + count > stale.len() {
+                    return Err(ValidationError::DeletePastEnd);
+                }
+                result.replace_range(cursor..cursor + count, "");
+            }
+            Operation::Insert { chars } => {
+                result.insert_str(cursor, &chars);
+                cursor += chars.len();
+            }
+        }
+    }
+
+    if result != latest {
+        return Err(ValidationError::DoesNotMatch);
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -22,6 +43,14 @@ enum Operation {
     Skip { count: usize },
     Delete { count: usize },
     Insert { chars: String },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ValidationError {
+    ParseError,
+    DoesNotMatch,
+    SkipPastEnd,
+    DeletePastEnd,
 }
 
 #[cfg(test)]
@@ -75,7 +104,7 @@ mod tests {
   "We can use operational transformations to keep everyone in a multiplayer repl in sync.",
   r#"[{"op": "delete", "count": 7}, {"op": "insert", "chars": "We"}, {"op": "skip", "count": 4}, {"op": "delete", "count": 1}]"#
         );
-        assert_eq!(result.unwrap_err(), ValidationError::SkipPastEnd);
+        assert_eq!(result.unwrap_err(), ValidationError::DoesNotMatch);
     }
 
     #[test]
